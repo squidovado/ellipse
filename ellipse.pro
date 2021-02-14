@@ -12,12 +12,14 @@ SOURCES += \
     geometry.cpp \
     graphics.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    panel.cpp
 
 HEADERS += \
     geometry.h \
     graphics.h \
-    mainwindow.h
+    mainwindow.h \
+    panel.h
 
 FORMS += \
     mainwindow.ui
