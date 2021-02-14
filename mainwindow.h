@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include "geometry.h"
 #include "graphics.h"
 
 QT_BEGIN_NAMESPACE
@@ -19,5 +20,6 @@ public:
 private:
     Ui::MainWindow *ui;
     Scene* scene = nullptr;
+    Placer* placer = nullptr;
 };
 #endif // MAINWINDOW_H

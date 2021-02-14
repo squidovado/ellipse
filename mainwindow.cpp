@@ -7,6 +7,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     scene = new Scene(this);
+    placer = new Placer(this);
     ui->graphicsView->setScene(scene);
 }
 
