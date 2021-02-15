@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include "geometry.h"
 #include "graphics.h"
+#include "panel.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
