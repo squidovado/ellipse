@@ -1,10 +1,6 @@
 #include "geometry.h"
 
-bool isEqual(double x, double y)
-{
-    const double eps = 1e-6;
-    return abs(x-y)<eps;
-}
+#define isEqual(x, y) (abs(x-y)<1e-6)
 
 double* solve3(const double (&matrix)[3][3], const double (&rhs)[3])
 {

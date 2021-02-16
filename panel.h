@@ -1,20 +1,22 @@
 #ifndef PANEL_H
 #define PANEL_H
-#include <QtCore/QObject>
 
-class QLineEdit;
+#include <QWidget>
 
-class Panel : public QObject
+namespace Ui {
+class Panel;
+}
+
+class Panel : public QWidget
 {
     Q_OBJECT
+
 public:
-    Panel(QLineEdit*[12]);
+    explicit Panel(QWidget *parent = nullptr);
+    ~Panel();
+
 private:
-    QLineEdit *_xcenter = nullptr, *_ycenter = nullptr,
-              *_tangent1a = nullptr, *_tangent1b = nullptr, *_tangent1c = nullptr,
-              *_tangent2a = nullptr, *_tangent2b = nullptr, *_tangent2c = nullptr,
-              *_point1x = nullptr, *_point1y = nullptr,
-              *_point2x = nullptr, *_point2y = nullptr;
+    Ui::Panel *ui;
 };
 
 #endif // PANEL_H
