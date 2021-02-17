@@ -1,6 +1,6 @@
+#include <QSharedPointer>
 #include "geometry.h"
-
-#define isEqual(x, y) (abs(x-y)<1e-6)
+#include "common.h"
 
 double* solve3(const double (&matrix)[3][3], const double (&rhs)[3])
 {
@@ -36,6 +36,11 @@ Placer::Placer(QObject *parent) : QObject(parent), line1(0.,1.,0.,0.), line2(0.,
 {
     changeOrder = {FirstLine, SecondLine, FirstPointOfTangency, SecondPointOfTangency};
     calculate();
+}
+
+void Placer::processNewData(QSharedPointer<InputData> data)
+{
+
 }
 
 void Placer::calculate()

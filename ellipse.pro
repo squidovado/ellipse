@@ -16,6 +16,7 @@ SOURCES += \
     panel.cpp
 
 HEADERS += \
+    common.h \
     geometry.h \
     graphics.h \
     mainwindow.h \

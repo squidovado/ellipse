@@ -4,6 +4,7 @@
 #include <QtCore/QObject>
 #include <QtCore/QPointF>
 
+class InputData;
 enum ChangeableObject
 {
     FirstLine, SecondLine, FirstPointOfTangency, SecondPointOfTangency
@@ -43,6 +44,8 @@ class Placer : public QObject
     Q_OBJECT
 public:
     Placer(QObject *parent = nullptr);
+public slots:
+    void processNewData(QSharedPointer<InputData>);
 private:
     void calculate();
     void calculateNewPoint(const Line&, const Line&, const QPointF&, QPointF&);
