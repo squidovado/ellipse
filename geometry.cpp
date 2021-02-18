@@ -1,4 +1,5 @@
 #include <QSharedPointer>
+#include <QMessageBox>
 #include "geometry.h"
 #include "common.h"
 
@@ -28,48 +29,77 @@ double* solve3(const double (&matrix)[3][3], const double (&rhs)[3])
 
 Line Line::translated(QPointF point) const
 {
-    return Line(_a-point.x(),_b,_c-point.y(),_d);
+    return Line(); //Line(_a-point.x(),_b,_c-point.y(),_d);
 }
 
-Placer::Placer(QObject *parent) : QObject(parent), line1(0.,1.,0.,0.), line2(0.,0.,0.,1.),
-    tpoint1(1.0, 0.0), tpoint2(0.0, -0.5), ellipse(QPointF(1.0,-0.5))
+Placer::Placer(QObject *parent) : QObject(parent), line1(), line2(),
+                                    tpoint1(1.0, 0.0), tpoint2(0.0, -0.5), ellipse()
 {
-    changeOrder = {FirstLine, SecondLine, FirstPointOfTangency, SecondPointOfTangency};
-    calculate();
+    //calculate();
 }
 
-void Placer::processNewData(QSharedPointer<InputData> data)
+void Placer::processNewData(QSharedPointer<const InputData> data)
 {
+    checkData(data);
+}
 
+bool Placer::checkData(QSharedPointer<const InputData> data) const
+{
+    if (isEqual(data->tangent1a,0) && isEqual(data->tangent1b,0))
+    {
+        QMessageBox::warning(nullptr, "Bad input", "First tangent must have at least one non-zero variable coefficient.");
+        return false;
+    }
+    if (data->mode == InputData::TwoTangentsOnePoint && isEqual(data->tangent2a,0) && isEqual(data->tangent2b,0))
+    {
+        QMessageBox::warning(nullptr, "Bad input", "Second tangent must have at least one non-zero variable coefficient.");
+        return false;
+    }
+    if (isEqual(data->tangent1a*data->xcenter + data->tangent1b*data->ycenter, data->tangent1c))
+    {
+        QMessageBox::warning(nullptr, "Bad input", "Ellipse center shouldn't belong to first tangent.");
+        return false;
+    }
+    if (data->mode == InputData::TwoTangentsOnePoint && isEqual(data->tangent2a*data->xcenter + data->tangent2b*data->ycenter, data->tangent2c))
+    {
+        QMessageBox::warning(nullptr, "Bad input", "Ellipse center shouldn't belong to second tangent.");
+        return false;
+    }
+    if (isEqual(data->xcenter,data->point1x) && isEqual(data->ycenter,data->point1y))
+    {
+        QMessageBox::warning(nullptr, "Bad input", "Ellipse center and first point of tangency shouldn't coincide.");
+        return false;
+    }
+    if (data->mode == InputData::OneTangentTwoPoints && isEqual(data->xcenter,data->point2x) && isEqual(data->ycenter,data->point2y))
+    {
+        QMessageBox::warning(nullptr, "Bad input", "Ellipse center and second point of tangency shouldn't coincide.");
+        return false;
+    }
+    if(!isEqual(data->tangent1a*data->point1x + data->tangent1b*data->point1y, data->tangent1c))
+    {
+        QMessageBox::warning(nullptr, "Bad input", "First tangent must pass through first point of tangency.");
+        return false;
+    }
+    if(data->mode == InputData::TwoTangentsOnePoint && isEqual(data->tangent2a*data->point1x + data->tangent2b*data->point1y, data->tangent2c))
+    {
+        QMessageBox::warning(nullptr, "Bad input", "Second tangent shouldn't pass through first point of tangency.");
+        return false;
+    }
+    if(data->mode == InputData::OneTangentTwoPoints && isEqual(data->tangent1a*data->point2x + data->tangent1b*data->point2y, data->tangent1c))
+    {
+        QMessageBox::warning(nullptr, "Bad input", "First tangent shouldn't pass through second point of tangency.");
+        return false;
+    }
+    return true;
 }
 
 void Placer::calculate()
 {
-    ChangeableObject chObj = changeOrder[0];
-    switch(chObj)
-    {
-    case FirstLine:
-        calculateNewLine(tpoint2, tpoint1, line2, line1);
-        break;
-    case SecondLine:
-        calculateNewLine(tpoint1, tpoint2, line1, line2);
-        break;
-    case FirstPointOfTangency:
-        calculateNewPoint(line2, line1, tpoint2, tpoint1);
-        break;
-    case SecondPointOfTangency:
-        calculateNewPoint(line1, line2, tpoint1, tpoint2);
-        break;
-    }
-}
-
-void Placer::calculateNewLine(const QPointF& p1, const QPointF& p2, const Line& l1, Line& l2)
-{
     //local coord system with the origin at the center of the ellipse
     QPointF origin = ellipse.center();
-    QPointF p1local = p1 - origin;
-    QPointF p2local = p2 - origin;
-    Line l1local = l1.translated(origin);
+    QPointF p1local;// = p1 - origin;
+    QPointF p2local;// = p2 - origin;
+    Line l1local;// = l1.translated(origin);
     double matrix[3][3], rhs[3] = {1., 1., 0.};
     matrix[0][0] = p1local.x()*p1local.x();
     matrix[0][1] = 2*p1local.x()*p1local.y();
@@ -81,9 +111,4 @@ void Placer::calculateNewLine(const QPointF& p1, const QPointF& p2, const Line& 
     matrix[2][1] = p1local.x()*l1local.d()+p1local.y()*l1local.b();
     matrix[2][2] = p1local.y()*l1local.d();
     double* solution = solve3(matrix, rhs);
-}
-
-void Placer::calculateNewPoint(const Line& l1, const Line& l2, const QPointF& p1, QPointF& p2)
-{
-
 }

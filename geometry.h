@@ -5,15 +5,11 @@
 #include <QtCore/QPointF>
 
 class InputData;
-enum ChangeableObject
-{
-    FirstLine, SecondLine, FirstPointOfTangency, SecondPointOfTangency
-};
 
 class Line
 {
 public:
-    Line(double A, double B, double C, double D) : _a(A), _b(B), _c(C), _d(D) {}
+    Line() : _a(0.0), _b(1.0), _c(0.0), _d(0.0) {}
     Line translated(QPointF) const;
     double a() const {return _a;}
     double b() const {return _b;}
@@ -28,7 +24,7 @@ private:
 class Ellipse
 {
 public:
-    Ellipse(QPointF center) : _center(center){}
+    Ellipse() : a11(1.0), a12(0.0), a22(4.0), _center(1.0,-0.5) {}
     QRectF boundingRect() const;
     void setCenter(QPointF point) {_center = point;}
     QPointF center() const {return _center;}
@@ -45,16 +41,11 @@ class Placer : public QObject
 public:
     Placer(QObject *parent = nullptr);
 public slots:
-    void processNewData(QSharedPointer<InputData>);
+    void processNewData(QSharedPointer<const InputData>);
 private:
+    bool checkData(QSharedPointer<const InputData>) const;
     void calculate();
-    void calculateNewPoint(const Line&, const Line&, const QPointF&, QPointF&);
-    void calculateNewLine(const QPointF&, const QPointF&, const Line&, Line&);
 
-    //The ellipse is totally defined with its center and three out of four Changeable Objects.
-    //The fourth Object must be calculated. The program chooses the most early changed by user Object to calculate it.
-    //The earliest changed object is in the front.
-    QVector<ChangeableObject> changeOrder;
     Line line1, line2;
     QPointF tpoint1, tpoint2;
     Ellipse ellipse;

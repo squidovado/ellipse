@@ -16,10 +16,10 @@ public:
     explicit Panel(QWidget *parent = nullptr);
     ~Panel();
 signals:
-    void newDataAdded(QSharedPointer<InputData> data);
+    void newDataAdded(QSharedPointer<const InputData> data) const;
 private slots:
     void comboBoxIndexChanged(int index);
-    void calculate();
+    void calculate() const;
 private:
     Ui::Panel *ui;
 };

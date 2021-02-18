@@ -22,6 +22,14 @@ Panel::Panel(QWidget *parent) :
     connect(ui->comboBox,QOverload<int>::of(&QComboBox::currentIndexChanged),this,&Panel::comboBoxIndexChanged);
     connect(ui->pushButton,&QPushButton::clicked,this,&Panel::calculate);
     comboBoxIndexChanged(0);
+
+    QDoubleValidator* validator = new QDoubleValidator();
+    validator->setLocale(QLocale::English);
+    QVector<QLineEdit*> LEvector = { ui->xcenter, ui->ycenter,
+                                    ui->tangent1a, ui->tangent1b, ui->tangent1c, ui->point1x, ui->point1y,
+                                    ui->tangent2a, ui->tangent2b, ui->tangent2c, ui->point2x, ui->point2y };
+    foreach (auto& lineEdit, LEvector)
+        lineEdit->setValidator(validator);
 }
 
 void Panel::comboBoxIndexChanged(int index)
@@ -44,7 +52,7 @@ void Panel::comboBoxIndexChanged(int index)
     }
 }
 
-void Panel::calculate()
+void Panel::calculate() const
 {
     QSharedPointer<InputData> data = QSharedPointer<InputData>::create();
     data->mode = ui->comboBox->currentIndex()==0 ? InputData::TwoTangentsOnePoint : InputData::OneTangentTwoPoints;
