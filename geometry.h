@@ -34,9 +34,6 @@ public:
     void setCenter(QPointF point) {_center = point;}
     void setParameters(double, double, double);
     QPointF center() const {return _center;}
-    double a11() const {return _a11;}
-    double a12() const {return _a12;}
-    double a22() const {return _a22;}
 private:
     //the ellipse is stored in a coordinate system with the origin in its center
     //so it can be presented as a11*x^2+2*a12*x*y+a22*y^2=1, where a11>0, a22>0, a11*a22-a12^2>0

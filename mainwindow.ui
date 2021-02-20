@@ -28,7 +28,7 @@
      <number>0</number>
     </property>
     <item>
-     <widget class="QGraphicsView" name="graphicsView"/>
+     <widget class="View" name="graphicsView"/>
     </item>
    </layout>
   </widget>
@@ -63,6 +63,11 @@
    <extends>QWidget</extends>
    <header>panel.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>View</class>
+   <extends>QGraphicsView</extends>
+   <header>graphics.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

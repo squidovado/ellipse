@@ -2,9 +2,8 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include "geometry.h"
-#include "graphics.h"
-#include "panel.h"
+class Scene;
+class Placer;
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -19,7 +18,6 @@ public:
     ~MainWindow();
 
 private:
-    void resizeEvent(QResizeEvent *event) override;
     Ui::MainWindow *ui;
     Scene* scene = nullptr;
     Placer* placer = nullptr;

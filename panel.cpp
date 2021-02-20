@@ -35,21 +35,21 @@ Panel::Panel(QWidget *parent) :
 
 void Panel::comboBoxIndexChanged(int index)
 {
-    if (index==0)
+    if (index==1)
     {
-        ui->point2x->setEnabled(false);
-        ui->point2y->setEnabled(false);
-        ui->tangent2a->setEnabled(true);
-        ui->tangent2b->setEnabled(true);
-        ui->tangent2c->setEnabled(true);
+        ui->point2x->setReadOnly(false);
+        ui->point2y->setReadOnly(false);
+        ui->tangent2a->setReadOnly(true);
+        ui->tangent2b->setReadOnly(true);
+        ui->tangent2c->setReadOnly(true);
     }
     else
     {
-        ui->point2x->setEnabled(true);
-        ui->point2y->setEnabled(true);
-        ui->tangent2a->setEnabled(false);
-        ui->tangent2b->setEnabled(false);
-        ui->tangent2c->setEnabled(false);
+        ui->point2x->setReadOnly(true);
+        ui->point2y->setReadOnly(true);
+        ui->tangent2a->setReadOnly(false);
+        ui->tangent2b->setReadOnly(false);
+        ui->tangent2c->setReadOnly(false);
     }
 }
 
