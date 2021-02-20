@@ -19,6 +19,7 @@ public:
     ~MainWindow();
 
 private:
+    void resizeEvent(QResizeEvent *event) override;
     Ui::MainWindow *ui;
     Scene* scene = nullptr;
     Placer* placer = nullptr;

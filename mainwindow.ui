@@ -54,7 +54,7 @@
    <attribute name="dockWidgetArea">
     <number>1</number>
    </attribute>
-   <widget class="Panel" name="dockWidgetContents"/>
+   <widget class="Panel" name="panel"/>
   </widget>
  </widget>
  <customwidgets>

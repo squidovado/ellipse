@@ -1,3 +1,4 @@
+#include <QKeyEvent>
 #include "panel.h"
 #include "ui_panel.h"
 #include "common.h"
@@ -82,6 +83,12 @@ void Panel::updateTPoint2(double x, double y)
 {
     ui->point2x->setText(QString::number(x,'g',2));
     ui->point2y->setText(QString::number(y,'g',2));
+}
+
+void Panel::keyPressEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_Enter)
+        calculate();
 }
 
 Panel::~Panel()

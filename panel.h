@@ -24,6 +24,7 @@ private slots:
     void comboBoxIndexChanged(int index);
     void calculate() const;
 private:
+    void keyPressEvent(QKeyEvent *event) override;
     Ui::Panel *ui;
 };
 
