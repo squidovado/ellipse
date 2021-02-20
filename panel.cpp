@@ -71,6 +71,19 @@ void Panel::calculate() const
     emit newDataAdded(data);
 }
 
+void Panel::updateLine2(double a, double b, double c)
+{
+    ui->tangent2a->setText(QString::number(a,'g',2));
+    ui->tangent2b->setText(QString::number(b,'g',2));
+    ui->tangent2c->setText(QString::number(c,'g',2));
+}
+
+void Panel::updateTPoint2(double x, double y)
+{
+    ui->point2x->setText(QString::number(x,'g',2));
+    ui->point2y->setText(QString::number(y,'g',2));
+}
+
 Panel::~Panel()
 {
     delete ui;

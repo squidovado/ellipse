@@ -1,3 +1,5 @@
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include <QSharedPointer>
 #include <QMessageBox>
 #include "geometry.h"
@@ -39,18 +41,30 @@ Line Line::translated(QPointF point) const
     return Line(_a-point.x(),_b,_c-point.y(),_d);
 }
 
-void Ellipse::setParameters(double a11, double a12, double a22)
+void Ellipse::setParameters(double A11, double A12, double A22)
 {
-    _a11 = a11;
-    _a12 = a12;
-    _a22 = a22;
+    _a11 = A11;
+    _a12 = A12;
+    _a22 = A22;
+}
+
+qreal Ellipse::angle() const
+{
+    return isEqual(_a11,_a22) ? 45.0 : atan(2*_a12/(_a22-_a11))/2.0;
+}
+
+QRectF Ellipse::boundingRect() const
+{
+    double angle_ = angle();
+    double sin_ = sin(angle_);
+    double cos_ = cos(angle_);
+    double horizontalSemiAxes = 1.0/sqrt(_a11*cos_*cos_-2.0*_a12*sin_*cos_+_a22*sin_*sin_);
+    double verticalSemiAxes = 1.0/sqrt(_a11*sin_*sin_+2.0*_a12*sin_*cos_+_a22*cos_*cos_);
+    return QRectF(-horizontalSemiAxes,verticalSemiAxes,2*horizontalSemiAxes,2*verticalSemiAxes);
 }
 
 Placer::Placer(QObject *parent) : QObject(parent), line1(), line2(),
-                                    tpoint1(1.0, 0.0), tpoint2(0.0, -0.5), ellipse()
-{
-    //calculate();
-}
+                                    tpoint1(1.0, 0.0), tpoint2(0.0, -0.5), ellipse() {}
 
 void Placer::processNewData(QSharedPointer<const InputData> data)
 {
@@ -60,6 +74,7 @@ void Placer::processNewData(QSharedPointer<const InputData> data)
     tpoint1 = QPointF(data->point1x, data->point1y);
     tpoint2 = QPointF(data->point2x, data->point2y);
     line1.set(tpoint1.x(),data->tangent1b,tpoint1.y(),-data->tangent1a);
+    bool success;
     if (data->mode == InputData::TwoTangentsOnePoint)
     {
         double a2,c2;
@@ -74,10 +89,17 @@ void Placer::processNewData(QSharedPointer<const InputData> data)
             c2 = data->tangent2c/data->tangent2b;
         }
         line2.set(a2,data->tangent2b,c2,-data->tangent2a);
-        calculateTwoLinesOnePoint();
+        success = calculateTwoLinesOnePoint();
     }
     else
-        calculateTwoPointsOneLine();
+        success = calculateTwoPointsOneLine();
+    if(!success)
+        return;
+    if(data->mode == InputData::OneTangentTwoPoints)
+        emit line2updated(-line2.d(),line2.b(),-line2.d()*line2.a()+line2.b()*line2.c());
+    else
+        emit tpoint2updated(tpoint2.x(),tpoint2.y());
+    calculateScene();
 }
 
 bool Placer::checkData(QSharedPointer<const InputData> data) const
@@ -125,7 +147,7 @@ bool Placer::checkData(QSharedPointer<const InputData> data) const
     return true;
 }
 
-void Placer::calculateTwoPointsOneLine()
+bool Placer::calculateTwoPointsOneLine()
 {
     //local coord system with the origin at the center of the ellipse
     QPointF origin = ellipse.center();
@@ -146,21 +168,54 @@ void Placer::calculateTwoPointsOneLine()
     if (!solve3(matrix, rhs, solution) || solution[0]<=0.0 || solution[2]<=0.0 || solution[0]*solution[2]-solution[1]*solution[1]<=0.0)
     {
         errorMessage(8);
-        return;
+        return false;
     }
     ellipse.setParameters(solution[0], solution[1], solution[2]);
     line2.set(tpoint2.x(),solution[1]*p2local.x()+solution[2]*p2local.y(),
               tpoint2.y(),-solution[0]*p2local.x()-solution[1]*p2local.y());
+    return true;
 }
 
-void Placer::calculateTwoLinesOnePoint()
+bool Placer::calculateTwoLinesOnePoint()
 {
+    return true;
+}
 
+void Placer::calculateScene() const
+{
+    QSharedPointer<GraphicsData> data = QSharedPointer<GraphicsData>::create();
+    data->angle = ellipse.angle()*180/M_PI;
+    data->ellipseCenter = ellipse.center();
+    QRectF ellipseRect = ellipse.boundingRect();
+    data->ellipseRect = ellipseRect;
+    QTransform transform;
+    transform.rotate(data->angle);
+    transform.translate(data->ellipseCenter.x(),-ellipseRect.height()+data->ellipseCenter.y());
+    QPolygonF poly = transform.map(ellipseRect);
+    double polyleft = poly[0].x();
+    double polyright = poly[0].x();
+    double polytop = poly[0].y();
+    double polybottom = poly[0].y();
+    foreach (auto point, poly)
+    {
+        if (point.x()<polyleft)
+            polyleft = point.x();
+        if (point.x()>polyright)
+            polyright = point.x();
+        if (point.y()<polybottom)
+            polybottom = point.y();
+        if (point.y()>polytop)
+            polytop = point.y();
+    }
+    double polywidth = polyright - polyleft;
+    double polyheight = polytop - polybottom;
+    QRectF viewRect = QRectF(polyleft-polywidth/4.0, polytop+polyheight/4.0, polywidth*1.5, polyheight*1.5);
+    emit elementsUpdated(data);
 }
 
 void Placer::errorMessage(quint8 error) const
 {
-    QString errors[9] = {"First tangent must have at least one non-zero variable coefficient.",
+    const QString errors[9] = {"First tangent must have at least one non-zero variable coefficient.",
                         "Second tangent must have at least one non-zero variable coefficient.",
                         "Ellipse center shouldn't belong to first tangent.",
                         "Ellipse center shouldn't belong to second tangent.",

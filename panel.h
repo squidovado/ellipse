@@ -15,6 +15,9 @@ class Panel : public QWidget
 public:
     explicit Panel(QWidget *parent = nullptr);
     ~Panel();
+public slots:
+    void updateLine2(double, double, double);
+    void updateTPoint2(double, double);
 signals:
     void newDataAdded(QSharedPointer<const InputData> data) const;
 private slots:

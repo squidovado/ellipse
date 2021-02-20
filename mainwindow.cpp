@@ -11,6 +11,9 @@ MainWindow::MainWindow(QWidget *parent)
     ui->graphicsView->setScene(scene);
     placer = new Placer(this);
     connect(ui->dockWidgetContents, &Panel::newDataAdded, placer, &Placer::processNewData);
+    connect(placer, &Placer::line2updated, ui->dockWidgetContents, &Panel::updateLine2);
+    connect(placer, &Placer::tpoint2updated, ui->dockWidgetContents, &Panel::updateTPoint2);
+    connect(placer, &Placer::elementsUpdated, scene, &Scene::updateScene);
 }
 
 MainWindow::~MainWindow()
