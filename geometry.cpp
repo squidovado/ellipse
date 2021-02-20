@@ -41,6 +41,38 @@ Line Line::translated(QPointF point) const
     return Line(_a-point.x(),_b,_c-point.y(),_d);
 }
 
+QLineF Line::intersected(const QRectF& rect) const
+{
+    double t,x,y;
+    QVector<QPointF> points;
+    if(!isEqual(_b,0.0))
+    {
+        t = (rect.left()-_a)/_b;
+        y = _c + t * _d;
+        if (y>rect.top() && y<rect.bottom())
+            points.push_back(QPointF(rect.left(),y));
+        t = (rect.right()-_a)/_b;
+        y = _c + t * _d;
+        if (y>rect.top() && y<rect.bottom())
+            points.push_back(QPointF(rect.right(),y));
+    }
+    if(!isEqual(_d,0.0))
+    {
+        t = (rect.top()-_c)/_d;
+        x = _a + t * _b;
+        if (x>rect.left() && x<rect.right())
+            points.push_back(QPointF(x,rect.top()));
+        t = (rect.bottom()-_c)/_d;
+        x = _a + t * _b;
+        if (x>rect.left() && x<rect.right())
+            points.push_back(QPointF(x,rect.bottom()));
+    }
+    if (points.size() == 2)
+        return QLineF(points[0], points[1]);
+    else
+        return QLineF();
+}
+
 void Ellipse::setParameters(double A11, double A12, double A22)
 {
     _a11 = A11;
@@ -60,7 +92,7 @@ QRectF Ellipse::boundingRect() const
     double cos_ = cos(angle_);
     double horizontalSemiAxes = 1.0/sqrt(_a11*cos_*cos_-2.0*_a12*sin_*cos_+_a22*sin_*sin_);
     double verticalSemiAxes = 1.0/sqrt(_a11*sin_*sin_+2.0*_a12*sin_*cos_+_a22*cos_*cos_);
-    return QRectF(-horizontalSemiAxes,verticalSemiAxes,2*horizontalSemiAxes,2*verticalSemiAxes);
+    return QRectF(-horizontalSemiAxes,-verticalSemiAxes,2*horizontalSemiAxes,2*verticalSemiAxes);
 }
 
 Placer::Placer(QObject *parent) : QObject(parent), line1(), line2(),
@@ -184,13 +216,13 @@ bool Placer::calculateTwoLinesOnePoint()
 void Placer::calculateScene() const
 {
     QSharedPointer<GraphicsData> data = QSharedPointer<GraphicsData>::create();
-    data->angle = ellipse.angle()*180/M_PI;
+    data->angle = -ellipse.angle()*180/M_PI;
     data->ellipseCenter = ellipse.center();
     QRectF ellipseRect = ellipse.boundingRect();
     data->ellipseRect = ellipseRect;
     QTransform transform;
-    transform.rotate(data->angle);
-    transform.translate(data->ellipseCenter.x(),-ellipseRect.height()+data->ellipseCenter.y());
+    transform.translate(data->ellipseCenter.x(),data->ellipseCenter.y());
+    transform.rotate(-data->angle);
     QPolygonF poly = transform.map(ellipseRect);
     double polyleft = poly[0].x();
     double polyright = poly[0].x();
@@ -209,7 +241,9 @@ void Placer::calculateScene() const
     }
     double polywidth = polyright - polyleft;
     double polyheight = polytop - polybottom;
-    QRectF viewRect = QRectF(polyleft-polywidth/4.0, polytop+polyheight/4.0, polywidth*1.5, polyheight*1.5);
+    QRectF viewRect = QRectF(polyleft-polywidth/4.0, polybottom-polyheight/4.0, polywidth*1.5, polyheight*1.5);
+    data->line1 = line1.intersected(viewRect);
+    data->line2 = line2.intersected(viewRect);
     emit elementsUpdated(data);
 }
 

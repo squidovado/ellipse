@@ -9,6 +9,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     scene = new Scene(this);
     ui->graphicsView->setScene(scene);
+    ui->graphicsView->scale(1.0,-1.0);
     placer = new Placer(this);
     connect(ui->dockWidgetContents, &Panel::newDataAdded, placer, &Placer::processNewData);
     connect(placer, &Placer::line2updated, ui->dockWidgetContents, &Panel::updateLine2);
