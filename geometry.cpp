@@ -81,7 +81,7 @@ void Ellipse::setParameters(double A11, double A12, double A22)
 
 qreal Ellipse::angle() const
 {
-    return isEqual(_a11,_a22) ? 45.0 : atan(2*_a12/(_a22-_a11))/2.0;
+    return isEqual(_a11,_a22) ? M_PI/4.0 : atan(2*_a12/(_a22-_a11))/2.0;
 }
 
 QRectF Ellipse::boundingRect() const
@@ -92,6 +92,17 @@ QRectF Ellipse::boundingRect() const
     double horizontalSemiAxes = 1.0/sqrt(_a11*cos_*cos_-2.0*_a12*sin_*cos_+_a22*sin_*sin_);
     double verticalSemiAxes = 1.0/sqrt(_a11*sin_*sin_+2.0*_a12*sin_*cos_+_a22*cos_*cos_);
     return QRectF(-horizontalSemiAxes,-verticalSemiAxes,2*horizontalSemiAxes,2*verticalSemiAxes);
+}
+
+void Ellipse::rotate(double angle)
+{
+    double sin_sin = sin(angle)*sin(angle);
+    double sin_cos = sin(angle)*cos(angle);
+    double cos_cos = cos(angle)*cos(angle);
+    double a11 = _a11*cos_cos-2*_a12*sin_cos+_a22*sin_sin;
+    double a12 = (_a11-_a22)*sin_cos+_a12*(cos_cos-sin_sin);
+    double a22 = _a11*sin_sin+2*_a12*sin_cos+_a22*cos_cos;
+    setParameters(a11, a12, a22);
 }
 
 Placer::Placer(QObject *parent) : QObject(parent), line1(), line2(), ellipse() {}
@@ -176,10 +187,10 @@ bool Placer::calculate()
     {
         double angle = line1.angle();
         QTransform transform;
-        transform.rotateRadians(angle);
+        transform.rotateRadians(-angle);
         QPointF p1rotated = transform.map(p1local);
-        ellipse.setParameters(1.0,-p1rotated.x()/p1rotated.y(),(p1rotated.x()*p1rotated.x()+1.0)/p1rotated.y());
-        //ellipse.rotate(angle);
+        ellipse.setParameters(1.0,-p1rotated.x()/p1rotated.y(),(p1rotated.x()*p1rotated.x()+1.0)/p1rotated.y()/p1rotated.y());
+        ellipse.rotate(angle);
         QMessageBox::warning(nullptr, "Infinite solutions", "There is infinity of solutions. One of them is shown.");
         return true;
     }
