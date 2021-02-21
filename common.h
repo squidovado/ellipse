@@ -8,7 +8,6 @@
 
 struct InputData
 {
-    enum Mode {OneTangentTwoPoints, TwoTangentsOnePoint} mode;
     double xcenter, ycenter;
     double tangent1a, tangent1b, tangent1c, point1x, point1y,
            tangent2a, tangent2b, tangent2c, point2x, point2y;

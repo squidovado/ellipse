@@ -15,6 +15,7 @@ public:
     void resizeEvent(QResizeEvent *event) override;
 public slots:
     void updateView();
+    void clear();
 private:
     QLabel *topleft, *topright, *bottomleft, *bottomright;
 };
@@ -26,6 +27,7 @@ public:
     Scene(QObject *parent = nullptr);
 public slots:
     void updateScene(QSharedPointer<const GraphicsData>);
+    void clear();
 signals:
     void sceneUpdated();
 private:

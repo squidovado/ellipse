@@ -12,30 +12,6 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QLabel" name="label_4">
-     <property name="text">
-      <string>Given</string>
-     </property>
-     <property name="alignment">
-      <set>Qt::AlignCenter</set>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QComboBox" name="comboBox">
-     <item>
-      <property name="text">
-       <string>Center, 2 tangents, 1 point of tangency</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>Center, 1 tangent, 2 points of tangency</string>
-      </property>
-     </item>
-    </widget>
-   </item>
-   <item>
     <spacer name="verticalSpacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>

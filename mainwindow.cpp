@@ -12,11 +12,12 @@ MainWindow::MainWindow(QWidget *parent)
     scene = new Scene(this);
     ui->graphicsView->setScene(scene);
     placer = new Placer(this);
+    connect(ui->panel, &Panel::calculateClicked, scene, &Scene::clear);
+    connect(ui->panel, &Panel::calculateClicked, ui->graphicsView, &View::clear);
     connect(ui->panel, &Panel::newDataAdded, placer, &Placer::processNewData);
-    connect(placer, &Placer::line2updated, ui->panel, &Panel::updateLine2);
-    connect(placer, &Placer::tpoint2updated, ui->panel, &Panel::updateTPoint2);
     connect(placer, &Placer::elementsUpdated, scene, &Scene::updateScene);
     connect(scene, &Scene::sceneUpdated, ui->graphicsView, &View::updateView);
+    connect(placer, &Placer::line2updated, ui->panel, &Panel::updateLine2);
 }
 
 MainWindow::~MainWindow()

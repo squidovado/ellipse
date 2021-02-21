@@ -10,19 +10,21 @@ class GraphicsData;
 class Line
 {
 public:
-    Line() : _a(0.0), _b(1.0), _c(0.0), _d(0.0) {}
-    Line(double A, double B, double C, double D) : _a(A), _b(B), _c(C), _d(D) {}
-    Line translated(QPointF) const;
+    Line() : _tpoint(), _b(1.0), _d(0.0) {}
+    Line(QPointF point, double B, double D) : _tpoint(point), _b(B), _d(D) {}
     QLineF intersected(const QRectF& rect) const;
-    void set(double, double, double, double);
-    double a() const {return _a;}
+    void set(QPointF, double, double);
     double b() const {return _b;}
-    double c() const {return _c;}
     double d() const {return _d;}
+    QPointF tpoint() const {return _tpoint;}
+    double angle() const;
 private:
-    //x=a+b*t
-    //y=c+d*t
-    double _a,_b,_c,_d;
+    //x=_tpoint.x()+b*t
+    //y=_tpoint.y()+d*t - parametric line equations
+
+    //point of tangency
+    QPointF _tpoint;
+    double _b,_d;
 };
 
 class Ellipse
@@ -34,6 +36,7 @@ public:
     void setCenter(QPointF point) {_center = point;}
     void setParameters(double, double, double);
     QPointF center() const {return _center;}
+    void rotate(double angle);
 private:
     //the ellipse is stored in a coordinate system with the origin in its center
     //so it can be presented as a11*x^2+2*a12*x*y+a22*y^2=1, where a11>0, a22>0, a11*a22-a12^2>0
@@ -49,18 +52,16 @@ public:
 public slots:
     void processNewData(QSharedPointer<const InputData>);
 signals:
-    void line2updated(double, double, double);
-    void tpoint2updated(double, double);
     void elementsUpdated(QSharedPointer<const GraphicsData>) const;
+    void line2updated(double, double, double);
 private:
-    bool checkData(QSharedPointer<const InputData>) const;
-    bool calculateTwoLinesOnePoint();
-    bool calculateTwoPointsOneLine();
-    void calculateScene() const;
+    bool checkData(QSharedPointer<const InputData>);
+    bool calculate();
+    void createOutput() const;
     void errorMessage(quint8) const;
 
+    bool _update2ndTangent;
     Line line1, line2;
-    QPointF tpoint1, tpoint2;
     Ellipse ellipse;
 };
 #endif // GEOMETRY_H

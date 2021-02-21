@@ -34,7 +34,7 @@ void View::updateView()
 {
     if(isEqual(sceneRect().height(),0.0))
         return;
-    fitInView(scene()->sceneRect());
+    fitInView(scene()->itemsBoundingRect());
     topleft->setText("("+QString::number(mapToScene(0,0).x(),'f',2)+", "+QString::number(mapToScene(0,0).y(),'f',2)+")");
     topleft->setGeometry(0,0,topleft->sizeHint().width(),topleft->sizeHint().height());
     topright->setText("("+QString::number(mapToScene(width(),0).x(),'f',2)+", "+QString::number(mapToScene(width(),0).y(),'f',2)+")");
@@ -43,6 +43,14 @@ void View::updateView()
     bottomleft->setGeometry(0,height()-bottomleft->height(),bottomleft->sizeHint().width(),bottomleft->sizeHint().height());
     bottomright->setText("("+QString::number(mapToScene(width(),height()).x(),'f',2)+", "+QString::number(mapToScene(width(),height()).y(),'f',2)+")");
     bottomright->setGeometry(width()-bottomright->sizeHint().width(),height()-bottomright->height(),bottomright->sizeHint().width(),bottomright->sizeHint().height());
+}
+
+void View::clear()
+{
+    topleft->setText("");
+    topright->setText("");
+    bottomleft->setText("");
+    bottomright->setText("");
 }
 
 Scene::Scene(QObject *parent) : QGraphicsScene(parent)
@@ -59,6 +67,13 @@ Scene::Scene(QObject *parent) : QGraphicsScene(parent)
     addItem(line1);
     addItem(line2);
     addItem(ellipse);
+}
+
+void Scene::clear()
+{
+    line1->setLine(QLine());
+    line2->setLine(QLine());
+    ellipse->setRect(QRect());
 }
 
 void Scene::updateScene(QSharedPointer<const GraphicsData> data)

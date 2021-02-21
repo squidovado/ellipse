@@ -17,11 +17,10 @@ public:
     ~Panel();
 public slots:
     void updateLine2(double, double, double);
-    void updateTPoint2(double, double);
 signals:
     void newDataAdded(QSharedPointer<const InputData> data) const;
+    void calculateClicked() const;
 private slots:
-    void comboBoxIndexChanged(int index);
     void calculate() const;
 private:
     void keyPressEvent(QKeyEvent *event) override;

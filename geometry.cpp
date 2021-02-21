@@ -28,17 +28,16 @@ bool solve3(const double (&matrix)[3][3], const double (&rhs)[3], double (&solut
     return true;
 }
 
-void Line::set(double a, double b, double c, double d)
+double Line::angle() const
 {
-    _a = a;
-    _b = b;
-    _c = c;
-    _d = d;
+    return isEqual(_b,0.0) ? M_PI/2.0 : atan(_d/_b);
 }
 
-Line Line::translated(QPointF point) const
+void Line::set(QPointF point, double B, double D)
 {
-    return Line(_a-point.x(),_b,_c-point.y(),_d);
+    _tpoint = point;
+    _b = B;
+    _d = D;
 }
 
 QLineF Line::intersected(const QRectF& rect) const
@@ -47,23 +46,23 @@ QLineF Line::intersected(const QRectF& rect) const
     QVector<QPointF> points;
     if(!isEqual(_b,0.0))
     {
-        t = (rect.left()-_a)/_b;
-        y = _c + t * _d;
+        t = (rect.left()-_tpoint.x())/_b;
+        y = _tpoint.y() + t * _d;
         if (y>rect.top() && y<rect.bottom())
             points.push_back(QPointF(rect.left(),y));
-        t = (rect.right()-_a)/_b;
-        y = _c + t * _d;
+        t = (rect.right()-_tpoint.x())/_b;
+        y = _tpoint.y() + t * _d;
         if (y>rect.top() && y<rect.bottom())
             points.push_back(QPointF(rect.right(),y));
     }
     if(!isEqual(_d,0.0))
     {
-        t = (rect.top()-_c)/_d;
-        x = _a + t * _b;
+        t = (rect.top()-_tpoint.y())/_d;
+        x = _tpoint.x() + t * _b;
         if (x>rect.left() && x<rect.right())
             points.push_back(QPointF(x,rect.top()));
-        t = (rect.bottom()-_c)/_d;
-        x = _a + t * _b;
+        t = (rect.bottom()-_tpoint.y())/_d;
+        x = _tpoint.x() + t * _b;
         if (x>rect.left() && x<rect.right())
             points.push_back(QPointF(x,rect.bottom()));
     }
@@ -95,53 +94,29 @@ QRectF Ellipse::boundingRect() const
     return QRectF(-horizontalSemiAxes,-verticalSemiAxes,2*horizontalSemiAxes,2*verticalSemiAxes);
 }
 
-Placer::Placer(QObject *parent) : QObject(parent), line1(), line2(),
-                                    tpoint1(1.0, 0.0), tpoint2(0.0, -0.5), ellipse() {}
+Placer::Placer(QObject *parent) : QObject(parent), line1(), line2(), ellipse() {}
 
 void Placer::processNewData(QSharedPointer<const InputData> data)
 {
+    _update2ndTangent = false;
     if (!checkData(data))
         return;
     ellipse.setCenter(QPointF(data->xcenter, data->ycenter));
-    tpoint1 = QPointF(data->point1x, data->point1y);
-    tpoint2 = QPointF(data->point2x, data->point2y);
-    line1.set(tpoint1.x(),data->tangent1b,tpoint1.y(),-data->tangent1a);
-    bool success;
-    if (data->mode == InputData::TwoTangentsOnePoint)
-    {
-        double a2,c2;
-        if (isEqual(data->tangent2b,0.0))
-        {
-            a2 = data->tangent2c/data->tangent2a;
-            c2 = 0.0;
-        }
-        else
-        {
-            a2 = 0.0;
-            c2 = data->tangent2c/data->tangent2b;
-        }
-        line2.set(a2,data->tangent2b,c2,-data->tangent2a);
-        success = calculateTwoLinesOnePoint();
-    }
-    else
-        success = calculateTwoPointsOneLine();
-    if(!success)
+    line1.set(QPointF(data->point1x,data->point1y),data->tangent1b,-data->tangent1a);
+    line2.set(QPointF(data->point2x,data->point2y),data->tangent2b,-data->tangent2a);
+    if(!calculate())
         return;
-    if(data->mode == InputData::OneTangentTwoPoints)
-        emit line2updated(-line2.d(),line2.b(),-line2.d()*line2.a()+line2.b()*line2.c());
-    else
-        emit tpoint2updated(tpoint2.x(),tpoint2.y());
-    calculateScene();
+    createOutput();
 }
 
-bool Placer::checkData(QSharedPointer<const InputData> data) const
+bool Placer::checkData(QSharedPointer<const InputData> data)
 {
     if (isEqual(data->tangent1a,0) && isEqual(data->tangent1b,0))
     {
         errorMessage(0);
         return false;
     }
-    if (data->mode == InputData::TwoTangentsOnePoint && isEqual(data->tangent2a,0) && isEqual(data->tangent2b,0))
+    if (isEqual(data->tangent2a,0) && isEqual(data->tangent2b,0))
     {
         errorMessage(1);
         return false;
@@ -151,41 +126,63 @@ bool Placer::checkData(QSharedPointer<const InputData> data) const
         errorMessage(2);
         return false;
     }
-    if (data->mode == InputData::TwoTangentsOnePoint && isEqual(data->tangent2a*data->xcenter + data->tangent2b*data->ycenter, data->tangent2c))
+    if (isEqual(data->tangent2a*data->xcenter + data->tangent2b*data->ycenter, data->tangent2c))
     {
         errorMessage(3);
         return false;
     }
-    if (data->mode == InputData::OneTangentTwoPoints && isEqual(data->xcenter,data->point2x) && isEqual(data->ycenter,data->point2y))
+    if(!isEqual(data->tangent1a*data->point1x + data->tangent1b*data->point1y, data->tangent1c))
     {
         errorMessage(4);
         return false;
     }
-    if(!isEqual(data->tangent1a*data->point1x + data->tangent1b*data->point1y, data->tangent1c))
+    if(!isEqual(data->tangent2a*data->point2x + data->tangent2b*data->point2y, data->tangent2c))
     {
-        errorMessage(5);
-        return false;
+        QMessageBox::StandardButton button = QMessageBox::question(nullptr, "Bad input",
+                                    "Second tangent must pass through second point of tangency. "
+                                    "Do you want 2nd tangent updated?",QMessageBox::Yes | QMessageBox::No,	QMessageBox::Yes);
+        if (button == QMessageBox::No)
+            return false;
+        _update2ndTangent = true;
     }
-    if(data->mode == InputData::TwoTangentsOnePoint && isEqual(data->tangent2a*data->point1x + data->tangent2b*data->point1y, data->tangent2c))
+    if (isEqual(data->tangent1a*data->tangent2b,data->tangent2a*data->tangent1b) &&
+        isEqual(data->tangent1a*data->tangent2c,data->tangent2a*data->tangent1c) &&
+        isEqual(data->tangent1b*data->tangent2c,data->tangent2b*data->tangent1c))
     {
         errorMessage(6);
         return false;
     }
-    if(data->mode == InputData::OneTangentTwoPoints && isEqual(data->tangent1a*data->point2x + data->tangent1b*data->point2y, data->tangent1c))
+    if(isEqual(data->tangent2a*data->point1x + data->tangent2b*data->point1y, data->tangent2c))
     {
         errorMessage(7);
+        return false;
+    }
+    if(isEqual(data->tangent1a*data->point2x + data->tangent1b*data->point2y, data->tangent1c))
+    {
+        errorMessage(8);
         return false;
     }
     return true;
 }
 
-bool Placer::calculateTwoPointsOneLine()
+bool Placer::calculate()
 {
     //local coord system with the origin at the center of the ellipse
     QPointF origin = ellipse.center();
-    QPointF p1local = tpoint1 - origin;
-    QPointF p2local = tpoint2 - origin;
-    Line l1local = line1.translated(origin);
+    QPointF p1local = line1.tpoint() - origin;
+    QPointF p2local = line2.tpoint() - origin;
+    QPointF middle = (p1local + p2local)/2.0;
+    if(isEqual(middle.x(),0.0) && isEqual(middle.y(),0.0) && isEqual(line1.b()*line2.d(),line2.b()*line1.d()))
+    {
+        double angle = line1.angle();
+        QTransform transform;
+        transform.rotateRadians(angle);
+        QPointF p1rotated = transform.map(p1local);
+        ellipse.setParameters(1.0,-p1rotated.x()/p1rotated.y(),(p1rotated.x()*p1rotated.x()+1.0)/p1rotated.y());
+        //ellipse.rotate(angle);
+        QMessageBox::warning(nullptr, "Infinite solutions", "There is infinity of solutions. One of them is shown.");
+        return true;
+    }
     double matrix[3][3], rhs[3] = {1., 1., 0.};
     matrix[0][0] = p1local.x()*p1local.x();
     matrix[0][1] = 2*p1local.x()*p1local.y();
@@ -193,27 +190,39 @@ bool Placer::calculateTwoPointsOneLine()
     matrix[1][0] = p2local.x()*p2local.x();
     matrix[1][1] = 2*p2local.x()*p2local.y();
     matrix[1][2] = p2local.y()*p2local.y();
-    matrix[2][0] = p1local.x()*l1local.b();
-    matrix[2][1] = p1local.x()*l1local.d()+p1local.y()*l1local.b();
-    matrix[2][2] = p1local.y()*l1local.d();
+    matrix[2][0] = p1local.x()*line1.b();
+    matrix[2][1] = p1local.x()*line1.d()+p1local.y()*line1.b();
+    matrix[2][2] = p1local.y()*line1.d();
     double solution[3];
+
     if (!solve3(matrix, rhs, solution) || solution[0]<=0.0 || solution[2]<=0.0 || solution[0]*solution[2]-solution[1]*solution[1]<=0.0)
     {
-        errorMessage(8);
+        errorMessage(9);
         return false;
     }
+    if (!isEqual(solution[0]*p2local.x()*line2.b()+solution[1]*(p2local.x()*line2.d()+p2local.y()*line2.b())
+                 +solution[2]*p2local.y()*line2.d(),0.0) || _update2ndTangent)
+    {
+        double A = solution[0]*p2local.x()+solution[1]*p2local.y();
+        double B = solution[1]*p2local.x()+solution[2]*p2local.y();
+        double C = A*line2.tpoint().x()+B*line2.tpoint().y();
+        if(!_update2ndTangent)
+        {
+            QMessageBox::StandardButton button = QMessageBox::question(nullptr, "Bad input",
+                              "Excess data. Solution can't be found. Check input for correctness. "
+                              "Change 2nd tangent to<br>"+QString::number(A) +
+                              " * x + " + QString::number(B) + " * y = " + QString::number(C)+" ?",QMessageBox::Yes | QMessageBox::No,	QMessageBox::Yes);
+            if (button == QMessageBox::No)
+                return false;
+        }
+        line2.set(line2.tpoint(),B,-A);
+        emit line2updated(A, B, C);
+    }
     ellipse.setParameters(solution[0], solution[1], solution[2]);
-    line2.set(tpoint2.x(),solution[1]*p2local.x()+solution[2]*p2local.y(),
-              tpoint2.y(),-solution[0]*p2local.x()-solution[1]*p2local.y());
     return true;
 }
 
-bool Placer::calculateTwoLinesOnePoint()
-{
-    return true;
-}
-
-void Placer::calculateScene() const
+void Placer::createOutput() const
 {
     QSharedPointer<GraphicsData> data = QSharedPointer<GraphicsData>::create();
     data->angle = -ellipse.angle()*180/M_PI;
@@ -249,14 +258,15 @@ void Placer::calculateScene() const
 
 void Placer::errorMessage(quint8 error) const
 {
-    const QString errors[9] = {"First tangent must have at least one non-zero variable coefficient.",
+    const QString errors[] = {"First tangent must have at least one non-zero variable coefficient.",
                         "Second tangent must have at least one non-zero variable coefficient.",
                         "Ellipse center shouldn't belong to first tangent.",
                         "Ellipse center shouldn't belong to second tangent.",
-                        "Ellipse center and second point of tangency shouldn't coincide.",
                         "First tangent must pass through first point of tangency.",
+                        "Second tangent must pass through second point of tangency.",
+                        "Tangents shouldn't coincide",
                         "Second tangent shouldn't pass through first point of tangency.",
                         "First tangent shouldn't pass through second point of tangency.",
-                        "Ellipse solution can't be found (might be hyperbola or imaginary ellipse)."};
+                        "Ellipse solution can't be found (might be hyperbola or imaginary ellipse)." };
     QMessageBox::warning(nullptr, "Bad input", errors[error]);
 }
