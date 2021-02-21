@@ -12,6 +12,7 @@ MainWindow::MainWindow(QWidget *parent)
     scene = new Scene(this);
     ui->graphicsView->setScene(scene);
     placer = new Placer(this);
+    ui->dockWidget->setTitleBarWidget(new QWidget());
     connect(ui->panel, &Panel::calculateClicked, scene, &Scene::clear);
     connect(ui->panel, &Panel::calculateClicked, ui->graphicsView, &View::clear);
     connect(ui->panel, &Panel::newDataAdded, placer, &Placer::processNewData);
